@@ -1,0 +1,28 @@
+.scroll-line-hotkey {
+	display: inline-block;
+	padding: 2px 8px;
+	border-radius: var(--radius-s);
+	border: 1px solid var(--background-modifier-border);
+	background: var(--background-secondary);
+	color: var(--text-normal);
+	cursor: pointer;
+	font-size: var(--font-ui-small);
+	min-width: 80px;
+	text-align: center;
+	transition: border-color 150ms ease;
+}
+
+.scroll-line-hotkey:hover {
+	border-color: var(--interactive-accent);
+}
+
+.scroll-line-hotkey.is-recording {
+	border-color: var(--interactive-accent);
+	color: var(--text-muted);
+	animation: scroll-line-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes scroll-line-pulse {
+	0%, 100% { opacity: 1; }
+	50% { opacity: 0.5; }
+}

@@ -1,0 +1,18 @@
+{
+	"name": "obsidian-scroll-line",
+	"version": "1.0.0",
+	"description": "Obsidian plugin to scroll the viewport by lines without moving the cursor",
+	"main": "main.js",
+	"scripts": {
+		"dev": "node esbuild.config.mjs",
+		"build": "node esbuild.config.mjs production"
+	},
+	"keywords": ["obsidian", "plugin", "scroll"],
+	"license": "MIT",
+	"devDependencies": {
+		"@types/node": "^22.0.0",
+		"esbuild": "^0.24.0",
+		"obsidian": "latest",
+		"typescript": "~5.6.0"
+	}
+}
