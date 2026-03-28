@@ -28,7 +28,7 @@ An [Obsidian](https://obsidian.md) plugin that scrolls the editor viewport up or
 
 **Lines per scroll:** Open **Settings > Scroll Line** to set how many lines to scroll per keypress (default: 1).
 
-**Keybindings:** Open **Settings > Hotkeys** and search for "Scroll line" to configure the keybindings (default: Ctrl+Alt+↓ / Ctrl+Alt+↑).
+**Keybindings:** Default keybindings (Ctrl+Alt+↓ / Ctrl+Alt+↑) are set up automatically on first install. To change them, open **Settings > Hotkeys** and search for "Scroll Line".
 
 ## Why This Plugin?
 
