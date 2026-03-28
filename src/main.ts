@@ -96,18 +96,9 @@ export default class ScrollLinePlugin extends Plugin {
 			// File doesn't exist or is invalid
 		}
 
-		// Collect all key combos already in use
-		const usedCombos = new Set<string>();
-		for (const bindings of Object.values(hotkeys)) {
-			for (const hk of bindings) {
-				usedCombos.add(hotkeyToString(hk));
-			}
-		}
-
 		let changed = false;
 		for (const [cmdId, hk] of Object.entries(DESIRED_HOTKEYS)) {
 			if (hotkeys[cmdId]) continue;
-			if (usedCombos.has(hotkeyToString(hk))) continue;
 			hotkeys[cmdId] = [hk];
 			changed = true;
 		}
@@ -166,10 +157,6 @@ export default class ScrollLinePlugin extends Plugin {
 		if (custom !== undefined) return custom;
 		return hm.getDefaultHotkeys(commandId) || [];
 	}
-}
-
-function hotkeyToString(hk: ObsidianHotkey): string {
-	return [...hk.modifiers].sort().join('+') + '+' + hk.key;
 }
 
 function obsidianHotkeyToCM6(hotkey: ObsidianHotkey): string {
