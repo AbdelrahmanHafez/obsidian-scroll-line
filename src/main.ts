@@ -193,6 +193,6 @@ class ScrollLineSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName('Hotkeys')
-			.setDesc('Configure scroll hotkeys in Settings \u2192 Hotkeys \u2192 search "Scroll Line".');
+			.setDesc('Configure scroll hotkeys in settings \u2192 hotkeys \u2192 search "Scroll Line".');
 	}
 }
