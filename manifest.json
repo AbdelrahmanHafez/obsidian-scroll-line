@@ -1,7 +1,7 @@
 {
 	"id": "scroll-line",
 	"name": "Scroll Line",
-	"version": "1.0.0",
+	"version": "1.1.0",
 	"minAppVersion": "1.0.0",
 	"description": "Scroll the viewport up or down by a configurable number of lines without moving the cursor.",
 	"author": "Hafez",

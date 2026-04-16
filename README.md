@@ -5,8 +5,9 @@ An [Obsidian](https://obsidian.md) plugin that scrolls the editor viewport up or
 ## Features
 
 - Configurable lines per scroll
+- Optional smooth (animated) scroll with easing, toggleable in settings
 - Keybindings configurable via Obsidian's built-in **Hotkeys** page
-- Smooth key-repeat support (hold the key to keep scrolling)
+- Continuous scroll on key hold (registered at CM6 level for proper key-repeat)
 - Uses CodeMirror 6's actual line height for accurate scrolling across all themes and font sizes
 
 ## Installation
@@ -27,6 +28,8 @@ An [Obsidian](https://obsidian.md) plugin that scrolls the editor viewport up or
 ## Configuration
 
 **Lines per scroll:** Open **Settings > Scroll Line** to set how many lines to scroll per keypress (default: 1).
+
+**Smooth scroll:** Toggle in **Settings > Scroll Line** to animate the scroll with easing instead of jumping instantly (default: on).
 
 **Keybindings:** Default keybindings (Ctrl+Alt+↓ / Ctrl+Alt+↑) are set up automatically on first install. To change them, open **Settings > Hotkeys** and search for "Scroll Line".
 
