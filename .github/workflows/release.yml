@@ -18,9 +18,25 @@ jobs:
           node-version: 20
       - run: npm install
       - run: npm run build
+      - name: Extract release notes from CHANGELOG.md
+        run: |
+          VERSION="${GITHUB_REF_NAME}"
+          awk -v ver="$VERSION" '
+            index($0, "## [" ver "]") == 1 { in_section=1; next }
+            in_section && /^## \[/ { exit }
+            in_section { print }
+          ' CHANGELOG.md > RELEASE_NOTES.md
+
+          if [ ! -s RELEASE_NOTES.md ]; then
+            echo "::error::No changelog entry for $VERSION. Add a '## [$VERSION]' section to CHANGELOG.md."
+            exit 1
+          fi
+
+          echo "=== Release notes ==="
+          cat RELEASE_NOTES.md
       - uses: softprops/action-gh-release@v2
         with:
-          generate_release_notes: true
+          body_path: RELEASE_NOTES.md
           files: |
             main.js
             manifest.json
