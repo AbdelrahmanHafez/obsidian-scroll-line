@@ -1,14 +1,15 @@
 # Scroll Line
 
-An [Obsidian](https://obsidian.md) plugin that scrolls the editor viewport up or down by a configurable number of lines, without moving the cursor. Similar to `editor.action.scrollLineDown` / `editor.action.scrollLineUp` in VS Code.
+An [Obsidian](https://obsidian.md) plugin that scrolls the note viewport up or down by a configurable number of lines, without moving the cursor. Similar to `editor.action.scrollLineDown` / `editor.action.scrollLineUp` in VS Code.
 
 ## Features
 
 - Configurable lines per scroll
 - Optional smooth (animated) scroll with easing, toggleable in settings
 - Keybindings configurable via Obsidian's built-in **Hotkeys** page
-- Continuous scroll on key hold (registered at CM6 level for proper key-repeat)
-- Uses CodeMirror 6's actual line height for accurate scrolling across all themes and font sizes
+- Works in Editing and Reading modes
+- Continuous scroll on key hold
+- Uses the active view's line height for accurate scrolling across themes and font sizes
 
 ## Installation
 
@@ -35,7 +36,7 @@ An [Obsidian](https://obsidian.md) plugin that scrolls the editor viewport up or
 
 ## Why This Plugin?
 
-Obsidian has no built-in command for scrolling the viewport by lines. The existing hotkey system doesn't support key-repeat for commands, so holding a key only fires once. This plugin registers keybindings at the CodeMirror 6 level, which properly handles key-repeat for smooth, continuous scrolling.
+Obsidian has no built-in command for scrolling the viewport by lines. This plugin handles key repeat in both Editing and Reading modes, using CodeMirror editor bindings where available.
 
 ## License
 

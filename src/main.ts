@@ -1,6 +1,12 @@
-import { App, Plugin, PluginSettingTab, Setting } from 'obsidian';
-import { keymap, EditorView } from '@codemirror/view';
+import { App, MarkdownView, Plugin, PluginSettingTab, Setting } from 'obsidian';
+import { keymap, EditorView, ViewPlugin } from '@codemirror/view';
 import { Extension } from '@codemirror/state';
+import {
+	createScrollCommands,
+	getMarkdownScrollContext,
+	getScroller,
+	ManualScrollObserver,
+} from './smooth-scroller';
 
 // --- Obsidian type augmentation for undocumented APIs ---
 
@@ -45,22 +51,19 @@ const DESIRED_HOTKEYS: Record<string, ObsidianHotkey> = {
 export default class ScrollLinePlugin extends Plugin {
 	settings: ScrollLineSettings;
 	private editorExtension: Extension[] = [];
+	private previewScrollEl: HTMLElement | null = null;
+	private previewScrollObserver: ManualScrollObserver | null = null;
 
 	async onload() {
 		await this.loadSettings();
 
-		this.addCommand({
-			id: 'down',
-			name: 'Down',
-			editorCallback: (editor) => this.scrollBy(editor.cm, this.pixelsPerScroll(editor.cm)),
-		});
+		for (const command of createScrollCommands((direction) =>
+			this.scrollActiveView(direction)
+		)) {
+			this.addCommand(command);
+		}
 
-		this.addCommand({
-			id: 'up',
-			name: 'Up',
-			editorCallback: (editor) => this.scrollBy(editor.cm, -this.pixelsPerScroll(editor.cm)),
-		});
-
+		this.registerEditorExtension(ViewPlugin.fromClass(ManualScrollObserver));
 		this.registerEditorExtension(this.editorExtension);
 		this.app.workspace.onLayoutReady(async () => {
 			await this.applyDefaultHotkeys();
@@ -71,6 +74,10 @@ export default class ScrollLinePlugin extends Plugin {
 		);
 
 		this.addSettingTab(new ScrollLineSettingTab(this.app, this));
+	}
+
+	onunload() {
+		this.previewScrollObserver?.destroy();
 	}
 
 	async loadSettings() {
@@ -92,7 +99,7 @@ export default class ScrollLinePlugin extends Plugin {
 			bindings.push({
 				key: obsidianHotkeyToCM6(hk),
 				run: (view) => {
-					this.scrollBy(view, this.pixelsPerScroll(view));
+					this.scrollBy(view.scrollDOM, this.pixelsPerScroll(view));
 					return true;
 				},
 			});
@@ -102,7 +109,7 @@ export default class ScrollLinePlugin extends Plugin {
 			bindings.push({
 				key: obsidianHotkeyToCM6(hk),
 				run: (view) => {
-					this.scrollBy(view, -this.pixelsPerScroll(view));
+					this.scrollBy(view.scrollDOM, -this.pixelsPerScroll(view));
 					return true;
 				},
 			});
@@ -119,13 +126,35 @@ export default class ScrollLinePlugin extends Plugin {
 		return view.defaultLineHeight * this.settings.linesPerScroll;
 	}
 
-	private scrollBy(view: EditorView, delta: number) {
-		const scroller = getScroller(view);
+	private scrollActiveView(direction: -1 | 1) {
+		const view = this.app.workspace.getActiveViewOfType(MarkdownView);
+		if (!view) return;
+
+		const context = getMarkdownScrollContext(view);
+		if (context.mode === 'preview') {
+			this.observePreviewScrolling(context.scrollEl);
+		}
+		this.scrollBy(
+			context.scrollEl,
+			direction * context.lineHeight * this.settings.linesPerScroll
+		);
+	}
+
+	private observePreviewScrolling(scrollEl: HTMLElement) {
+		if (this.previewScrollEl === scrollEl) return;
+
+		this.previewScrollObserver?.destroy();
+		this.previewScrollEl = scrollEl;
+		this.previewScrollObserver = new ManualScrollObserver(scrollEl);
+	}
+
+	private scrollBy(scrollEl: HTMLElement, delta: number) {
+		const scroller = getScroller(scrollEl);
 		if (this.settings.smoothScroll) {
-			scroller.scrollBy(view, delta);
+			scroller.scrollBy(scrollEl, delta);
 		} else {
 			scroller.cancel();
-			view.scrollDOM.scrollBy(0, delta);
+			scrollEl.scrollBy(0, delta);
 		}
 	}
 
@@ -172,61 +201,6 @@ export default class ScrollLinePlugin extends Plugin {
 
 function obsidianHotkeyToCM6(hotkey: ObsidianHotkey): string {
 	return [...hotkey.modifiers, hotkey.key].join('-');
-}
-
-// --- Smooth scroller (rAF easing per EditorView) ---
-
-// Fraction of the remaining distance covered each frame. Exponential decay,
-// so animations feel snappy at first and settle softly.
-const EASE_PER_FRAME = 0.2;
-const STOP_EPSILON = 0.5;
-
-class SmoothScroller {
-	private target = 0;
-	private rafId: number | null = null;
-
-	scrollBy(view: EditorView, delta: number) {
-		const scrollEl = view.scrollDOM;
-
-		if (this.rafId === null) {
-			this.target = scrollEl.scrollTop;
-		}
-
-		const maxScroll = scrollEl.scrollHeight - scrollEl.clientHeight;
-		this.target = Math.max(0, Math.min(this.target + delta, maxScroll));
-
-		if (this.rafId !== null) return;
-
-		const tick = () => {
-			const diff = this.target - scrollEl.scrollTop;
-			if (Math.abs(diff) < STOP_EPSILON) {
-				scrollEl.scrollTop = this.target;
-				this.rafId = null;
-				return;
-			}
-			scrollEl.scrollTop += diff * EASE_PER_FRAME;
-			this.rafId = requestAnimationFrame(tick);
-		};
-		this.rafId = requestAnimationFrame(tick);
-	}
-
-	cancel() {
-		if (this.rafId !== null) {
-			cancelAnimationFrame(this.rafId);
-			this.rafId = null;
-		}
-	}
-}
-
-const scrollers = new WeakMap<EditorView, SmoothScroller>();
-
-function getScroller(view: EditorView): SmoothScroller {
-	let s = scrollers.get(view);
-	if (!s) {
-		s = new SmoothScroller();
-		scrollers.set(view, s);
-	}
-	return s;
 }
 
 // --- Settings Tab ---

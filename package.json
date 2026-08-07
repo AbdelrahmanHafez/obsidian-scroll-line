@@ -3,9 +3,13 @@
 	"version": "1.0.0",
 	"description": "Obsidian plugin to scroll the viewport by lines without moving the cursor",
 	"main": "main.js",
+	"engines": {
+		"node": ">=22.6"
+	},
 	"scripts": {
 		"dev": "node esbuild.config.mjs",
-		"build": "node esbuild.config.mjs production"
+		"build": "node esbuild.config.mjs production",
+		"test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types --test tests/*.test.mts"
 	},
 	"keywords": ["obsidian", "plugin", "scroll"],
 	"license": "MIT",
