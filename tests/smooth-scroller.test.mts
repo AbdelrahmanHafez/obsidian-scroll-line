@@ -42,7 +42,27 @@ test('shortcut animation continues when no external scroll occurs', () => {
 	}
 });
 
-function createTestContext() {
+test('upward animation survives editor scroll adjustments', () => {
+	// Arrange
+	const { animationFrames, restoreAnimationFrame, scrollDOM, scroller, view } =
+		createTestContext({ scrollTop: 500 });
+
+	try {
+		// Act
+		scroller.scrollBy(view, -120);
+		runNextAnimationFrame(animationFrames);
+		scrollDOM.scrollTop -= 20;
+		runAllAnimationFrames(animationFrames);
+
+		// Assert
+		assert.equal(scrollDOM.scrollTop, 380);
+		assert.equal(animationFrames.size, 0);
+	} finally {
+		restoreAnimationFrame();
+	}
+});
+
+function createTestContext({ scrollTop = 100 } = {}) {
 	const animationFrames = new Map<number, FrameRequestCallback>();
 	let nextAnimationFrameId = 1;
 	const originalRequestAnimationFrame = globalThis.requestAnimationFrame;
@@ -56,7 +76,7 @@ function createTestContext() {
 		animationFrames.delete(id);
 	};
 	const scrollDOM = {
-		scrollTop: 100,
+		scrollTop,
 		scrollHeight: 1_000,
 		clientHeight: 200,
 	};
