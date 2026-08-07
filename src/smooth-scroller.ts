@@ -65,10 +65,14 @@ export class ManualScrollObserver {
 		this.scrollEl.addEventListener('mousedown', this.cancelAnimation, {
 			passive: true,
 		});
+		this.scrollEl.addEventListener('pointerdown', this.cancelAnimation, {
+			passive: true,
+		});
 	}
 
 	destroy() {
 		this.scrollEl.removeEventListener('wheel', this.cancelAnimation);
 		this.scrollEl.removeEventListener('mousedown', this.cancelAnimation);
+		this.scrollEl.removeEventListener('pointerdown', this.cancelAnimation);
 	}
 }
