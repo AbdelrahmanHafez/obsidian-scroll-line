@@ -300,23 +300,48 @@ test('upward animation survives editor scroll adjustments', () => {
 	}
 });
 
+test('animation uses the target pane window', () => {
+	// Arrange
+	const { animationFrames, restoreAnimationFrame, scrollDOM, scroller, view } =
+		createTestContext();
+	globalThis.requestAnimationFrame = () => {
+		throw new Error('Used the global window instead of the target pane window.');
+	};
+
+	try {
+		// Act
+		scroller.scrollBy(view, 120);
+		runAllAnimationFrames(animationFrames);
+
+		// Assert
+		assert.equal(scrollDOM.scrollTop, 220);
+	} finally {
+		restoreAnimationFrame();
+	}
+});
+
 function createTestContext({ scrollTop = 100 } = {}) {
 	const animationFrames = new Map<number, FrameRequestCallback>();
 	let nextAnimationFrameId = 1;
 	const originalRequestAnimationFrame = globalThis.requestAnimationFrame;
 	const originalCancelAnimationFrame = globalThis.cancelAnimationFrame;
-	globalThis.requestAnimationFrame = (callback) => {
+	const requestAnimationFrame = (callback: FrameRequestCallback) => {
 		const id = nextAnimationFrameId++;
 		animationFrames.set(id, callback);
 		return id;
 	};
-	globalThis.cancelAnimationFrame = (id) => {
+	const cancelAnimationFrame = (id: number) => {
 		animationFrames.delete(id);
 	};
+	globalThis.requestAnimationFrame = requestAnimationFrame;
+	globalThis.cancelAnimationFrame = cancelAnimationFrame;
 	const scrollDOM = Object.assign(new EventTarget(), {
 		scrollTop,
 		scrollHeight: 1_000,
 		clientHeight: 200,
+		ownerDocument: {
+			defaultView: { cancelAnimationFrame, requestAnimationFrame },
+		},
 	});
 	const view = { scrollDOM } as never;
 	const scroller = getScroller(view);
