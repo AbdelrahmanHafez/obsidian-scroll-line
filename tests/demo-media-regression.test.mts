@@ -162,10 +162,13 @@ describe('demo media regressions', () => {
 					{ maxBuffer: FRAME_WIDTH * FRAME_HEIGHT * 4 }
 				);
 
+				if (result.error != null) {
+					assert.fail(`failed to launch ffmpeg: ${result.error.message}`);
+				}
 				assert.equal(
 					result.status,
 					0,
-					result.stderr.toString('utf8') || `failed to decode ${relativePath}`
+					result.stderr?.toString('utf8') || `failed to decode ${relativePath}`
 				);
 				assert.equal(
 					result.stdout.length,
