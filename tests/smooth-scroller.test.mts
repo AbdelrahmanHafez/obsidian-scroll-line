@@ -1,7 +1,93 @@
 import * as assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { getScroller, ManualScrollObserver } from '../src/smooth-scroller.ts';
+import * as scrolling from '../src/smooth-scroller.ts';
+
+const { getScroller, ManualScrollObserver } = scrolling;
+
+test('reading mode uses its preview container and computed line height', () => {
+	// Arrange
+	const previewContainer = Object.assign(new EventTarget(), {
+		clientHeight: 200,
+		ownerDocument: {
+			defaultView: {
+				getComputedStyle: () => ({ fontSize: '16px', lineHeight: '24px' }),
+			},
+		},
+		scrollHeight: 1_000,
+		scrollTop: 100,
+	});
+	const markdownView = {
+		getMode: () => 'preview',
+		previewMode: { containerEl: previewContainer },
+	};
+	const getMarkdownScrollContext = Reflect.get(
+		scrolling,
+		'getMarkdownScrollContext'
+	);
+
+	// Act
+	const context =
+		typeof getMarkdownScrollContext === 'function'
+			? getMarkdownScrollContext(markdownView)
+			: undefined;
+
+	// Assert
+	assert.deepEqual(context, {
+		lineHeight: 24,
+		mode: 'preview',
+		scrollEl: previewContainer,
+	});
+});
+
+test('scroll commands are globally callable and repeatable', () => {
+	// Arrange
+	const createScrollCommands = Reflect.get(scrolling, 'createScrollCommands');
+	const directions: number[] = [];
+
+	// Act
+	const commands =
+		typeof createScrollCommands === 'function'
+			? createScrollCommands((direction: number) => directions.push(direction))
+			: [];
+	commands.find((command: { id: string }) => command.id === 'up')?.callback();
+	commands.find((command: { id: string }) => command.id === 'down')?.callback();
+
+	// Assert
+	assert.deepEqual(
+		commands.map(
+			(command: { callback?: unknown; id: string; repeatable?: boolean }) => ({
+				hasGlobalCallback: typeof command.callback === 'function',
+				id: command.id,
+				repeatable: command.repeatable,
+			})
+		),
+		[
+			{ hasGlobalCallback: true, id: 'down', repeatable: true },
+			{ hasGlobalCallback: true, id: 'up', repeatable: true },
+		]
+	);
+	assert.deepEqual(directions, [-1, 1]);
+});
+
+test('smooth scrolling supports a reading mode preview element', () => {
+	// Arrange
+	const { animationFrames, restoreAnimationFrame, scrollDOM } =
+		createTestContext();
+	const scroller = getScroller(scrollDOM as never);
+
+	try {
+		// Act
+		scroller.scrollBy(scrollDOM as never, 120);
+		runAllAnimationFrames(animationFrames);
+
+		// Assert
+		assert.equal(scrollDOM.scrollTop, 220);
+		assert.equal(animationFrames.size, 0);
+	} finally {
+		restoreAnimationFrame();
+	}
+});
 
 test('manual scrolling cancels an active shortcut animation', () => {
 	// Arrange
