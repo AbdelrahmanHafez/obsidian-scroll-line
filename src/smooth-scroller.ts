@@ -31,6 +31,7 @@ const NORMAL_LINE_HEIGHT_RATIO = 1.5;
 export class SmoothScroller {
 	private target = 0;
 	private rafId: number | null = null;
+	private animationWindow: Window | null = null;
 
 	scrollBy(target: ScrollTarget, delta: number) {
 		const scrollEl = getScrollElement(target);
@@ -44,23 +45,32 @@ export class SmoothScroller {
 
 		if (this.rafId !== null) return;
 
+		const animationWindow = scrollEl.ownerDocument.defaultView;
+		if (!animationWindow) {
+			scrollEl.scrollTop = this.target;
+			return;
+		}
+		this.animationWindow = animationWindow;
+
 		const tick = () => {
 			const diff = this.target - scrollEl.scrollTop;
 			if (Math.abs(diff) < STOP_EPSILON) {
 				scrollEl.scrollTop = this.target;
 				this.rafId = null;
+				this.animationWindow = null;
 				return;
 			}
 			scrollEl.scrollTop += diff * EASE_PER_FRAME;
-			this.rafId = globalThis.requestAnimationFrame(tick);
+			this.rafId = animationWindow.requestAnimationFrame(tick);
 		};
-		this.rafId = globalThis.requestAnimationFrame(tick);
+		this.rafId = animationWindow.requestAnimationFrame(tick);
 	}
 
 	cancel() {
 		if (this.rafId !== null) {
-			globalThis.cancelAnimationFrame(this.rafId);
+			this.animationWindow?.cancelAnimationFrame(this.rafId);
 			this.rafId = null;
+			this.animationWindow = null;
 		}
 	}
 }
