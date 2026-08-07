@@ -32,7 +32,7 @@ An [Obsidian](https://obsidian.md) plugin that scrolls the note viewport up or d
 
 **Smooth scroll:** Toggle in **Settings > Scroll Line** to animate the scroll with easing instead of jumping instantly (default: on).
 
-**Keybindings:** Default keybindings (Ctrl+Alt+↓ / Ctrl+Alt+↑) are set up automatically on first install. To change them, open **Settings > Hotkeys** and search for "Scroll Line".
+**Keybindings:** In Editing mode, the plugin recognizes Ctrl+Alt+Down and Ctrl+Alt+Up unless you configure different bindings. To use the commands in Reading mode, assign them in **Settings > Hotkeys** by searching for "Scroll Line".
 
 ## Why This Plugin?
 
