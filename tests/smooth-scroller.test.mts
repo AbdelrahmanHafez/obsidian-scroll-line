@@ -1,9 +1,12 @@
 import * as assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import * as scrolling from '../src/smooth-scroller.ts';
-
-const { getScroller, ManualScrollObserver } = scrolling;
+import {
+	createScrollCommands,
+	getMarkdownScrollContext,
+	getScroller,
+	ManualScrollObserver,
+} from '../src/smooth-scroller.ts';
 
 test('reading mode uses its preview container and computed line height', () => {
 	// Arrange
@@ -22,16 +25,8 @@ test('reading mode uses its preview container and computed line height', () => {
 		getMode: () => 'preview',
 		previewMode: { containerEl: previewContainer as never },
 	};
-	const getMarkdownScrollContext = Reflect.get(
-		scrolling,
-		'getMarkdownScrollContext'
-	);
-
 	// Act
-	const context =
-		typeof getMarkdownScrollContext === 'function'
-			? getMarkdownScrollContext(markdownView)
-			: undefined;
+	const context = getMarkdownScrollContext(markdownView);
 
 	// Assert
 	assert.deepEqual(context, {
@@ -41,18 +36,44 @@ test('reading mode uses its preview container and computed line height', () => {
 	});
 });
 
+test('reading mode derives a line height when the theme uses normal', () => {
+	// Arrange
+	const previewContainer = createPreviewContainer({
+		fontSize: '18px',
+		lineHeight: 'normal',
+	});
+	const markdownView = createReadingView(previewContainer);
+
+	// Act
+	const context = getMarkdownScrollContext(markdownView);
+
+	// Assert
+	assert.equal(context.lineHeight, 27);
+});
+
+test('reading mode uses a safe line height when styles are unavailable', () => {
+	// Arrange
+	const previewContainer = createPreviewContainer({
+		fontSize: '',
+		lineHeight: '',
+	});
+	const markdownView = createReadingView(previewContainer);
+
+	// Act
+	const context = getMarkdownScrollContext(markdownView);
+
+	// Assert
+	assert.equal(context.lineHeight, 24);
+});
+
 test('scroll commands are globally callable and repeatable', () => {
 	// Arrange
-	const createScrollCommands = Reflect.get(scrolling, 'createScrollCommands');
 	const directions: number[] = [];
 
 	// Act
-	const commands =
-		typeof createScrollCommands === 'function'
-			? createScrollCommands((direction: number) => directions.push(direction))
-			: [];
-	commands.find((command: { id: string }) => command.id === 'up')?.callback();
-	commands.find((command: { id: string }) => command.id === 'down')?.callback();
+	const commands = createScrollCommands((direction) => directions.push(direction));
+	commands.find((command) => command.id === 'up')?.callback();
+	commands.find((command) => command.id === 'down')?.callback();
 
 	// Assert
 	assert.deepEqual(
@@ -293,6 +314,33 @@ function createTestContext({ scrollTop = 100 } = {}) {
 		scrollDOM,
 		scroller,
 		view,
+	};
+}
+
+function createPreviewContainer({
+	fontSize,
+	lineHeight,
+}: {
+	fontSize: string;
+	lineHeight: string;
+}) {
+	return Object.assign(new EventTarget(), {
+		clientHeight: 200,
+		ownerDocument: {
+			defaultView: {
+				getComputedStyle: () => ({ fontSize, lineHeight }),
+			},
+		},
+		scrollHeight: 1_000,
+		scrollTop: 100,
+	});
+}
+
+function createReadingView(previewContainer: EventTarget) {
+	return {
+		editor: { cm: undefined as never },
+		getMode: () => 'preview',
+		previewMode: { containerEl: previewContainer as never },
 	};
 }
 
