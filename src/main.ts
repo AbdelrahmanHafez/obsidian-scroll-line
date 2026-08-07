@@ -1,7 +1,7 @@
 import { App, Plugin, PluginSettingTab, Setting } from 'obsidian';
-import { keymap, EditorView } from '@codemirror/view';
+import { keymap, EditorView, ViewPlugin } from '@codemirror/view';
 import { Extension } from '@codemirror/state';
-import { getScroller } from './smooth-scroller';
+import { getScroller, ManualScrollObserver } from './smooth-scroller';
 
 // --- Obsidian type augmentation for undocumented APIs ---
 
@@ -62,6 +62,7 @@ export default class ScrollLinePlugin extends Plugin {
 			editorCallback: (editor) => this.scrollBy(editor.cm, -this.pixelsPerScroll(editor.cm)),
 		});
 
+		this.registerEditorExtension(ViewPlugin.fromClass(ManualScrollObserver));
 		this.registerEditorExtension(this.editorExtension);
 		this.app.workspace.onLayoutReady(async () => {
 			await this.applyDefaultHotkeys();

@@ -7,7 +7,6 @@ const STOP_EPSILON = 0.5;
 
 export class SmoothScroller {
 	private target = 0;
-	private lastScrollTop: number | null = null;
 	private rafId: number | null = null;
 
 	scrollBy(view: EditorView, delta: number) {
@@ -15,7 +14,6 @@ export class SmoothScroller {
 
 		if (this.rafId === null) {
 			this.target = scrollEl.scrollTop;
-			this.lastScrollTop = scrollEl.scrollTop;
 		}
 
 		const maxScroll = scrollEl.scrollHeight - scrollEl.clientHeight;
@@ -24,24 +22,13 @@ export class SmoothScroller {
 		if (this.rafId !== null) return;
 
 		const tick = () => {
-			if (
-				this.lastScrollTop !== null &&
-				Math.abs(scrollEl.scrollTop - this.lastScrollTop) > STOP_EPSILON
-			) {
-				this.rafId = null;
-				this.lastScrollTop = null;
-				return;
-			}
-
 			const diff = this.target - scrollEl.scrollTop;
 			if (Math.abs(diff) < STOP_EPSILON) {
 				scrollEl.scrollTop = this.target;
 				this.rafId = null;
-				this.lastScrollTop = null;
 				return;
 			}
 			scrollEl.scrollTop += diff * EASE_PER_FRAME;
-			this.lastScrollTop = scrollEl.scrollTop;
 			this.rafId = globalThis.requestAnimationFrame(tick);
 		};
 		this.rafId = globalThis.requestAnimationFrame(tick);
@@ -51,7 +38,6 @@ export class SmoothScroller {
 		if (this.rafId !== null) {
 			globalThis.cancelAnimationFrame(this.rafId);
 			this.rafId = null;
-			this.lastScrollTop = null;
 		}
 	}
 }
@@ -65,4 +51,24 @@ export function getScroller(view: EditorView): SmoothScroller {
 		scrollers.set(view, scroller);
 	}
 	return scroller;
+}
+
+export class ManualScrollObserver {
+	private readonly scrollEl: HTMLElement;
+	private readonly scroller: SmoothScroller;
+	private readonly cancelAnimation = () => this.scroller.cancel();
+
+	constructor(view: EditorView) {
+		this.scrollEl = view.scrollDOM;
+		this.scroller = getScroller(view);
+		this.scrollEl.addEventListener('wheel', this.cancelAnimation, { passive: true });
+		this.scrollEl.addEventListener('pointerdown', this.cancelAnimation, {
+			passive: true,
+		});
+	}
+
+	destroy() {
+		this.scrollEl.removeEventListener('wheel', this.cancelAnimation);
+		this.scrollEl.removeEventListener('pointerdown', this.cancelAnimation);
+	}
 }
