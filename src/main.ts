@@ -1,6 +1,7 @@
 import { App, Plugin, PluginSettingTab, Setting } from 'obsidian';
 import { keymap, EditorView } from '@codemirror/view';
 import { Extension } from '@codemirror/state';
+import { getScroller } from './smooth-scroller';
 
 // --- Obsidian type augmentation for undocumented APIs ---
 
@@ -172,61 +173,6 @@ export default class ScrollLinePlugin extends Plugin {
 
 function obsidianHotkeyToCM6(hotkey: ObsidianHotkey): string {
 	return [...hotkey.modifiers, hotkey.key].join('-');
-}
-
-// --- Smooth scroller (rAF easing per EditorView) ---
-
-// Fraction of the remaining distance covered each frame. Exponential decay,
-// so animations feel snappy at first and settle softly.
-const EASE_PER_FRAME = 0.2;
-const STOP_EPSILON = 0.5;
-
-class SmoothScroller {
-	private target = 0;
-	private rafId: number | null = null;
-
-	scrollBy(view: EditorView, delta: number) {
-		const scrollEl = view.scrollDOM;
-
-		if (this.rafId === null) {
-			this.target = scrollEl.scrollTop;
-		}
-
-		const maxScroll = scrollEl.scrollHeight - scrollEl.clientHeight;
-		this.target = Math.max(0, Math.min(this.target + delta, maxScroll));
-
-		if (this.rafId !== null) return;
-
-		const tick = () => {
-			const diff = this.target - scrollEl.scrollTop;
-			if (Math.abs(diff) < STOP_EPSILON) {
-				scrollEl.scrollTop = this.target;
-				this.rafId = null;
-				return;
-			}
-			scrollEl.scrollTop += diff * EASE_PER_FRAME;
-			this.rafId = requestAnimationFrame(tick);
-		};
-		this.rafId = requestAnimationFrame(tick);
-	}
-
-	cancel() {
-		if (this.rafId !== null) {
-			cancelAnimationFrame(this.rafId);
-			this.rafId = null;
-		}
-	}
-}
-
-const scrollers = new WeakMap<EditorView, SmoothScroller>();
-
-function getScroller(view: EditorView): SmoothScroller {
-	let s = scrollers.get(view);
-	if (!s) {
-		s = new SmoothScroller();
-		scrollers.set(view, s);
-	}
-	return s;
 }
 
 // --- Settings Tab ---
