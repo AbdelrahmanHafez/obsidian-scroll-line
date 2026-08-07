@@ -75,9 +75,9 @@ describe('README demo media', () => {
 		]);
 		const mediaReferences = [
 			...readme.matchAll(
-				/(?:href=["']|src=["']|\]\()(?<path>docs\/assets\/[^"')\s>]+)/g
+				/(?:href=["']|src=["']|\]\()(docs\/assets\/[^"')\s>]+)/g
 			),
-		].map((match) => match.groups!.path);
+		].map((match) => match[1]);
 		return {
 			manifest: JSON.parse(manifestContents) as { id: string },
 			mediaReferences,
