@@ -18,8 +18,9 @@ test('reading mode uses its preview container and computed line height', () => {
 		scrollTop: 100,
 	});
 	const markdownView = {
+		editor: { cm: undefined as never },
 		getMode: () => 'preview',
-		previewMode: { containerEl: previewContainer },
+		previewMode: { containerEl: previewContainer as never },
 	};
 	const getMarkdownScrollContext = Reflect.get(
 		scrolling,

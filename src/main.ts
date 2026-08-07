@@ -1,7 +1,12 @@
-import { App, Plugin, PluginSettingTab, Setting } from 'obsidian';
+import { App, MarkdownView, Plugin, PluginSettingTab, Setting } from 'obsidian';
 import { keymap, EditorView, ViewPlugin } from '@codemirror/view';
 import { Extension } from '@codemirror/state';
-import { getScroller, ManualScrollObserver } from './smooth-scroller';
+import {
+	createScrollCommands,
+	getMarkdownScrollContext,
+	getScroller,
+	ManualScrollObserver,
+} from './smooth-scroller';
 
 // --- Obsidian type augmentation for undocumented APIs ---
 
@@ -46,21 +51,17 @@ const DESIRED_HOTKEYS: Record<string, ObsidianHotkey> = {
 export default class ScrollLinePlugin extends Plugin {
 	settings: ScrollLineSettings;
 	private editorExtension: Extension[] = [];
+	private previewScrollEl: HTMLElement | null = null;
+	private previewScrollObserver: ManualScrollObserver | null = null;
 
 	async onload() {
 		await this.loadSettings();
 
-		this.addCommand({
-			id: 'down',
-			name: 'Down',
-			editorCallback: (editor) => this.scrollBy(editor.cm, this.pixelsPerScroll(editor.cm)),
-		});
-
-		this.addCommand({
-			id: 'up',
-			name: 'Up',
-			editorCallback: (editor) => this.scrollBy(editor.cm, -this.pixelsPerScroll(editor.cm)),
-		});
+		for (const command of createScrollCommands((direction) =>
+			this.scrollActiveView(direction)
+		)) {
+			this.addCommand(command);
+		}
 
 		this.registerEditorExtension(ViewPlugin.fromClass(ManualScrollObserver));
 		this.registerEditorExtension(this.editorExtension);
@@ -73,6 +74,10 @@ export default class ScrollLinePlugin extends Plugin {
 		);
 
 		this.addSettingTab(new ScrollLineSettingTab(this.app, this));
+	}
+
+	onunload() {
+		this.previewScrollObserver?.destroy();
 	}
 
 	async loadSettings() {
@@ -94,7 +99,7 @@ export default class ScrollLinePlugin extends Plugin {
 			bindings.push({
 				key: obsidianHotkeyToCM6(hk),
 				run: (view) => {
-					this.scrollBy(view, this.pixelsPerScroll(view));
+					this.scrollBy(view.scrollDOM, this.pixelsPerScroll(view));
 					return true;
 				},
 			});
@@ -104,7 +109,7 @@ export default class ScrollLinePlugin extends Plugin {
 			bindings.push({
 				key: obsidianHotkeyToCM6(hk),
 				run: (view) => {
-					this.scrollBy(view, -this.pixelsPerScroll(view));
+					this.scrollBy(view.scrollDOM, -this.pixelsPerScroll(view));
 					return true;
 				},
 			});
@@ -121,13 +126,35 @@ export default class ScrollLinePlugin extends Plugin {
 		return view.defaultLineHeight * this.settings.linesPerScroll;
 	}
 
-	private scrollBy(view: EditorView, delta: number) {
-		const scroller = getScroller(view);
+	private scrollActiveView(direction: -1 | 1) {
+		const view = this.app.workspace.getActiveViewOfType(MarkdownView);
+		if (!view) return;
+
+		const context = getMarkdownScrollContext(view);
+		if (context.mode === 'preview') {
+			this.observePreviewScrolling(context.scrollEl);
+		}
+		this.scrollBy(
+			context.scrollEl,
+			direction * context.lineHeight * this.settings.linesPerScroll
+		);
+	}
+
+	private observePreviewScrolling(scrollEl: HTMLElement) {
+		if (this.previewScrollEl === scrollEl) return;
+
+		this.previewScrollObserver?.destroy();
+		this.previewScrollEl = scrollEl;
+		this.previewScrollObserver = new ManualScrollObserver(scrollEl);
+	}
+
+	private scrollBy(scrollEl: HTMLElement, delta: number) {
+		const scroller = getScroller(scrollEl);
 		if (this.settings.smoothScroll) {
-			scroller.scrollBy(view, delta);
+			scroller.scrollBy(scrollEl, delta);
 		} else {
 			scroller.cancel();
-			view.scrollDOM.scrollBy(0, delta);
+			scrollEl.scrollBy(0, delta);
 		}
 	}
 
