@@ -7,20 +7,14 @@ import {
 	getScroller,
 	ManualScrollObserver,
 } from './smooth-scroller';
+import { ObsidianHotkey, resolveHotkeys } from './hotkeys';
 
 // --- Obsidian type augmentation for undocumented APIs ---
-
-interface ObsidianHotkey {
-	modifiers: string[];
-	key: string;
-}
 
 declare module 'obsidian' {
 	interface App {
 		hotkeyManager: {
 			getHotkeys(id: string): ObsidianHotkey[] | undefined;
-			getDefaultHotkeys(id: string): ObsidianHotkey[];
-			load(): Promise<void>;
 		};
 	}
 	interface Editor {
@@ -33,7 +27,6 @@ declare module 'obsidian' {
 interface ScrollLineSettings {
 	linesPerScroll: number;
 	smoothScroll: boolean;
-	hotkeyDefaultsApplied?: boolean;
 }
 
 const DEFAULT_SETTINGS: ScrollLineSettings = {
@@ -41,9 +34,9 @@ const DEFAULT_SETTINGS: ScrollLineSettings = {
 	smoothScroll: true,
 };
 
-const DESIRED_HOTKEYS: Record<string, ObsidianHotkey> = {
-	'scroll-line:down': { modifiers: ['Ctrl', 'Alt'], key: 'ArrowDown' },
-	'scroll-line:up': { modifiers: ['Ctrl', 'Alt'], key: 'ArrowUp' },
+const DEFAULT_HOTKEYS: Record<string, ObsidianHotkey[]> = {
+	'scroll-line:down': [{ modifiers: ['Ctrl', 'Alt'], key: 'ArrowDown' }],
+	'scroll-line:up': [{ modifiers: ['Ctrl', 'Alt'], key: 'ArrowUp' }],
 };
 
 // --- Plugin ---
@@ -65,10 +58,7 @@ export default class ScrollLinePlugin extends Plugin {
 
 		this.registerEditorExtension(ViewPlugin.fromClass(ManualScrollObserver));
 		this.registerEditorExtension(this.editorExtension);
-		this.app.workspace.onLayoutReady(async () => {
-			await this.applyDefaultHotkeys();
-			this.buildKeymap();
-		});
+		this.app.workspace.onLayoutReady(() => this.buildKeymap());
 		this.registerEvent(
 			this.app.workspace.on('layout-change', () => this.buildKeymap())
 		);
@@ -81,7 +71,10 @@ export default class ScrollLinePlugin extends Plugin {
 	}
 
 	async loadSettings() {
-		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+		const savedSettings: unknown = await this.loadData();
+		this.settings = isStoredSettings(savedSettings)
+			? Object.assign({}, DEFAULT_SETTINGS, savedSettings)
+			: { ...DEFAULT_SETTINGS };
 	}
 
 	async saveSettings() {
@@ -90,8 +83,16 @@ export default class ScrollLinePlugin extends Plugin {
 	}
 
 	buildKeymap() {
-		const downKeys = this.getCommandHotkeys('scroll-line:down');
-		const upKeys = this.getCommandHotkeys('scroll-line:up');
+		const downKeys = resolveHotkeys(
+			this.app.hotkeyManager,
+			'scroll-line:down',
+			DEFAULT_HOTKEYS['scroll-line:down']
+		);
+		const upKeys = resolveHotkeys(
+			this.app.hotkeyManager,
+			'scroll-line:up',
+			DEFAULT_HOTKEYS['scroll-line:up']
+		);
 
 		const bindings: Array<{ key: string; run: (view: EditorView) => boolean }> = [];
 
@@ -158,49 +159,20 @@ export default class ScrollLinePlugin extends Plugin {
 		}
 	}
 
-	private async applyDefaultHotkeys() {
-		if (this.settings.hotkeyDefaultsApplied) return;
-
-		const configPath = `${this.app.vault.configDir}/hotkeys.json`;
-		let hotkeys: Record<string, ObsidianHotkey[]> = {};
-
-		try {
-			hotkeys = JSON.parse(await this.app.vault.adapter.read(configPath));
-		} catch {
-			// File doesn't exist or is invalid
-		}
-
-		let changed = false;
-		for (const [cmdId, hk] of Object.entries(DESIRED_HOTKEYS)) {
-			if (hotkeys[cmdId]) continue;
-			hotkeys[cmdId] = [hk];
-			changed = true;
-		}
-
-		if (changed) {
-			await this.app.vault.adapter.write(configPath, JSON.stringify(hotkeys, null, '  '));
-			// Reload hotkeyManager so the new entries take effect immediately
-			if (typeof this.app.hotkeyManager?.load === 'function') {
-				await this.app.hotkeyManager.load();
-			}
-		}
-
-		this.settings.hotkeyDefaultsApplied = true;
-		await this.saveData(this.settings);
-	}
-
-	private getCommandHotkeys(commandId: string): ObsidianHotkey[] {
-		const hm = this.app.hotkeyManager;
-		if (!hm) return [];
-
-		const custom = hm.getHotkeys(commandId);
-		if (custom !== undefined) return custom;
-		return hm.getDefaultHotkeys(commandId) || [];
-	}
 }
 
 function obsidianHotkeyToCM6(hotkey: ObsidianHotkey): string {
 	return [...hotkey.modifiers, hotkey.key].join('-');
+}
+
+function isStoredSettings(value: unknown): value is Partial<ScrollLineSettings> {
+	if (typeof value !== 'object' || value === null) return false;
+
+	const settings = value as Record<string, unknown>;
+	return (settings.linesPerScroll === undefined
+			|| typeof settings.linesPerScroll === 'number')
+		&& (settings.smoothScroll === undefined
+			|| typeof settings.smoothScroll === 'boolean');
 }
 
 // --- Settings Tab ---
@@ -245,6 +217,6 @@ class ScrollLineSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName('Hotkeys')
-			.setDesc('You can change these in settings \u2192 hotkeys.');
+			.setDesc('You can change these in settings > hotkeys.');
 	}
 }
