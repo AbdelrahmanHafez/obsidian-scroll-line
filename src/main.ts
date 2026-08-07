@@ -185,6 +185,30 @@ class ScrollLineSettingTab extends PluginSettingTab {
 		this.plugin = plugin;
 	}
 
+	getSettingDefinitions() {
+		return [
+			{
+				name: 'Lines per scroll',
+				desc: 'Number of lines to scroll per keypress.',
+				control: {
+					type: 'number' as const,
+					key: 'linesPerScroll',
+					min: 1,
+					step: 1,
+				},
+			},
+			{
+				name: 'Smooth scroll',
+				desc: 'Animate the scroll with easing instead of jumping instantly.',
+				control: { type: 'toggle' as const, key: 'smoothScroll' },
+			},
+			{
+				name: 'Hotkeys',
+				desc: 'You can change these in settings > hotkeys.',
+			},
+		];
+	}
+
 	display(): void {
 		const { containerEl } = this;
 		containerEl.empty();
