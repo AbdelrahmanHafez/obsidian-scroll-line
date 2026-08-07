@@ -36,6 +36,28 @@ test('reading mode uses its preview container and computed line height', () => {
 	});
 });
 
+test('reading mode resolves the nested preview scroller', () => {
+	// Arrange
+	const previewScroller = createPreviewContainer({
+		fontSize: '16px',
+		lineHeight: '24px',
+	});
+	const previewContainer = Object.assign(
+		createPreviewContainer({ fontSize: '16px', lineHeight: '24px' }),
+		{
+			querySelector: (selector: string) =>
+				selector === '.markdown-preview-view' ? previewScroller : null,
+		}
+	);
+	const markdownView = createReadingView(previewContainer);
+
+	// Act
+	const context = getMarkdownScrollContext(markdownView);
+
+	// Assert
+	assert.equal(context.scrollEl, previewScroller);
+});
+
 test('reading mode derives a line height when the theme uses normal', () => {
 	// Arrange
 	const previewContainer = createPreviewContainer({
