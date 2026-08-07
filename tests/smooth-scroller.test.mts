@@ -1,9 +1,7 @@
 import * as assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import * as smoothScrollerModule from '../src/smooth-scroller.ts';
-
-const { getScroller } = smoothScrollerModule;
+import { getScroller, ManualScrollObserver } from '../src/smooth-scroller.ts';
 
 test('manual scrolling cancels an active shortcut animation', () => {
 	// Arrange
@@ -38,7 +36,7 @@ test('scrollbar interaction cancels an active shortcut animation', () => {
 		// Act
 		scroller.scrollBy(view, 120);
 		runNextAnimationFrame(animationFrames);
-		scrollDOM.dispatchEvent(new Event('pointerdown'));
+		scrollDOM.dispatchEvent(new Event('mousedown'));
 		scrollDOM.scrollTop = 300;
 		runAllAnimationFrames(animationFrames);
 
@@ -47,6 +45,28 @@ test('scrollbar interaction cancels an active shortcut animation', () => {
 		assert.equal(animationFrames.size, 0);
 	} finally {
 		manualScrollObserver.destroy();
+		restoreAnimationFrame();
+	}
+});
+
+test('destroy removes manual scroll listeners', () => {
+	// Arrange
+	const { animationFrames, restoreAnimationFrame, scrollDOM, scroller, view } =
+		createTestContext();
+	const manualScrollObserver = createManualScrollObserver(view);
+	manualScrollObserver.destroy();
+
+	try {
+		// Act
+		scroller.scrollBy(view, 120);
+		runNextAnimationFrame(animationFrames);
+		scrollDOM.dispatchEvent(new Event('wheel'));
+		runAllAnimationFrames(animationFrames);
+
+		// Assert
+		assert.equal(scrollDOM.scrollTop, 220);
+		assert.equal(animationFrames.size, 0);
+	} finally {
 		restoreAnimationFrame();
 	}
 });
@@ -123,10 +143,7 @@ function createTestContext({ scrollTop = 100 } = {}) {
 }
 
 function createManualScrollObserver(view: never): { destroy(): void } {
-	const Observer = (smoothScrollerModule as Record<string, unknown>)
-		.ManualScrollObserver;
-	assert.equal(typeof Observer, 'function');
-	return new (Observer as new (view: never) => { destroy(): void })(view);
+	return new ManualScrollObserver(view);
 }
 
 function runNextAnimationFrame(animationFrames: Map<number, FrameRequestCallback>) {
