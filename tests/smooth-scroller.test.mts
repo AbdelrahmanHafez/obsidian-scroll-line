@@ -28,6 +28,29 @@ test('manual scrolling cancels an active shortcut animation', () => {
 	}
 });
 
+test('scrollbar interaction cancels an active shortcut animation', () => {
+	// Arrange
+	const { animationFrames, restoreAnimationFrame, scrollDOM, scroller, view } =
+		createTestContext();
+	const manualScrollObserver = createManualScrollObserver(view);
+
+	try {
+		// Act
+		scroller.scrollBy(view, 120);
+		runNextAnimationFrame(animationFrames);
+		scrollDOM.dispatchEvent(new Event('pointerdown'));
+		scrollDOM.scrollTop = 300;
+		runAllAnimationFrames(animationFrames);
+
+		// Assert
+		assert.equal(scrollDOM.scrollTop, 300);
+		assert.equal(animationFrames.size, 0);
+	} finally {
+		manualScrollObserver.destroy();
+		restoreAnimationFrame();
+	}
+});
+
 test('shortcut animation continues when no external scroll occurs', () => {
 	// Arrange
 	const { animationFrames, restoreAnimationFrame, scrollDOM, scroller, view } =
