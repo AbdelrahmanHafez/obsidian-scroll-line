@@ -62,13 +62,13 @@ export class ManualScrollObserver {
 		this.scrollEl = view.scrollDOM;
 		this.scroller = getScroller(view);
 		this.scrollEl.addEventListener('wheel', this.cancelAnimation, { passive: true });
-		this.scrollEl.addEventListener('pointerdown', this.cancelAnimation, {
+		this.scrollEl.addEventListener('mousedown', this.cancelAnimation, {
 			passive: true,
 		});
 	}
 
 	destroy() {
 		this.scrollEl.removeEventListener('wheel', this.cancelAnimation);
-		this.scrollEl.removeEventListener('pointerdown', this.cancelAnimation);
+		this.scrollEl.removeEventListener('mousedown', this.cancelAnimation);
 	}
 }
