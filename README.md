@@ -1,42 +1,59 @@
 # Scroll Line
 
-An [Obsidian](https://obsidian.md) plugin that scrolls the note viewport up or down by a configurable number of lines, without moving the cursor. Similar to `editor.action.scrollLineDown` / `editor.action.scrollLineUp` in VS Code.
+<p align="center">
+  <strong>Move the viewport, not the cursor.</strong><br>
+  Scroll an Obsidian note by exact lines while your cursor and selection stay put.
+</p>
 
-## Features
+<p align="center">
+  <a href="https://community.obsidian.md/plugins/scroll-line">
+    <img src="docs/assets/install-in-obsidian.svg" alt="View and install Scroll Line in Obsidian" height="48">
+  </a>
+</p>
 
-- Configurable lines per scroll
-- Optional smooth (animated) scroll with easing, toggleable in settings
-- Keybindings configurable via Obsidian's built-in **Hotkeys** page
+| Selection stays put | Works in Reading mode |
+| --- | --- |
+| ![Scroll Line keeps the text selection fixed while moving the viewport](docs/assets/scroll-line-selection.png) | ![Scroll Line moves the viewport in Obsidian Reading mode](docs/assets/scroll-line-reading-mode.png) |
+
+## See it in action
+
+![Scroll Line demo showing the viewport move with visible keyboard shortcuts](docs/assets/scroll-line-demo.gif)
+
+_Demo setting: 4 lines per keypress._
+
+<p align="center">
+  <a href="docs/assets/scroll-line-demo.mp4">Watch the full-quality recording</a>
+</p>
+
+## What it does
+
+- Scrolls by a configurable number of visual lines
+- Keeps the cursor and selection exactly where they are
+- Supports smooth animation and continuous key repeat
 - Works in Editing and Reading modes
-- Continuous scroll on key hold
-- Uses the active view's line height for accurate scrolling across themes and font sizes
+- Uses the active view's line height, so movement stays accurate across themes and font sizes
 
-## Installation
+## Shortcuts
 
-### From Obsidian Community Plugins
+| Action | Editing mode default |
+| --- | --- |
+| Scroll down | `Ctrl` + `Option` + `Down` |
+| Scroll up | `Ctrl` + `Option` + `Up` |
 
-1. Open **Settings > Community plugins**
-2. Search for **Scroll Line**
-3. Click **Install**, then **Enable**
+Change either binding in **Settings > Hotkeys**. Assign the commands there if you also want to use them in Reading mode.
 
-### Manual Installation
+## Settings
 
-1. Download `main.js`, `manifest.json`, and `styles.css` from the [latest release](https://github.com/AbdelrahmanHafez/obsidian-scroll-line/releases/latest)
-2. Create a folder `scroll-line` inside your vault's `.obsidian/plugins/` directory
-3. Place the downloaded files inside that folder
-4. Reload Obsidian and enable the plugin in **Settings > Community plugins**
+Open **Settings > Scroll Line** to change:
 
-## Configuration
+- **Lines per scroll:** Number of lines moved by each keypress
+- **Smooth scroll:** Animate movement instead of jumping instantly
 
-**Lines per scroll:** Open **Settings > Scroll Line** to set how many lines to scroll per keypress (default: 1).
+## Install
 
-**Smooth scroll:** Toggle in **Settings > Scroll Line** to animate the scroll with easing instead of jumping instantly (default: on).
+Open [Scroll Line in the Obsidian Community directory](https://community.obsidian.md/plugins/scroll-line), then press **Add to Obsidian**.
 
-**Keybindings:** In Editing mode, the plugin recognizes Ctrl+Alt+Down and Ctrl+Alt+Up unless you configure different bindings. To use the commands in Reading mode, assign them in **Settings > Hotkeys** by searching for "Scroll Line".
-
-## Why This Plugin?
-
-Obsidian has no built-in command for scrolling the viewport by lines. This plugin handles key repeat in both Editing and Reading modes, using CodeMirror editor bindings where available.
+For a manual installation, download `main.js`, `manifest.json`, and `styles.css` from the [latest release](https://github.com/AbdelrahmanHafez/obsidian-scroll-line/releases/latest), then place them in `<vault>/.obsidian/plugins/scroll-line/`.
 
 ## License
 
