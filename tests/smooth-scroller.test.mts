@@ -1,25 +1,29 @@
 import * as assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { getScroller } from '../src/smooth-scroller.ts';
+import * as smoothScrollerModule from '../src/smooth-scroller.ts';
+
+const { getScroller } = smoothScrollerModule;
 
 test('manual scrolling cancels an active shortcut animation', () => {
 	// Arrange
 	const { animationFrames, restoreAnimationFrame, scrollDOM, scroller, view } =
 		createTestContext();
+	const manualScrollObserver = createManualScrollObserver(view);
 
 	try {
 		// Act
 		scroller.scrollBy(view, 120);
 		runNextAnimationFrame(animationFrames);
+		scrollDOM.dispatchEvent(new Event('wheel'));
 		scrollDOM.scrollTop = 300;
-		runNextAnimationFrame(animationFrames);
 		runAllAnimationFrames(animationFrames);
 
 		// Assert
 		assert.equal(scrollDOM.scrollTop, 300);
 		assert.equal(animationFrames.size, 0);
 	} finally {
+		manualScrollObserver.destroy();
 		restoreAnimationFrame();
 	}
 });
@@ -75,11 +79,11 @@ function createTestContext({ scrollTop = 100 } = {}) {
 	globalThis.cancelAnimationFrame = (id) => {
 		animationFrames.delete(id);
 	};
-	const scrollDOM = {
+	const scrollDOM = Object.assign(new EventTarget(), {
 		scrollTop,
 		scrollHeight: 1_000,
 		clientHeight: 200,
-	};
+	});
 	const view = { scrollDOM } as never;
 	const scroller = getScroller(view);
 
@@ -93,6 +97,13 @@ function createTestContext({ scrollTop = 100 } = {}) {
 		scroller,
 		view,
 	};
+}
+
+function createManualScrollObserver(view: never): { destroy(): void } {
+	const Observer = (smoothScrollerModule as Record<string, unknown>)
+		.ManualScrollObserver;
+	assert.equal(typeof Observer, 'function');
+	return new (Observer as new (view: never) => { destroy(): void })(view);
 }
 
 function runNextAnimationFrame(animationFrames: Map<number, FrameRequestCallback>) {
