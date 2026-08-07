@@ -10,15 +10,9 @@ import {
 
 test('reading mode uses its preview container and computed line height', () => {
 	// Arrange
-	const previewContainer = Object.assign(new EventTarget(), {
-		clientHeight: 200,
-		ownerDocument: {
-			defaultView: {
-				getComputedStyle: () => ({ fontSize: '16px', lineHeight: '24px' }),
-			},
-		},
-		scrollHeight: 1_000,
-		scrollTop: 100,
+	const previewContainer = createPreviewContainer({
+		fontSize: '16px',
+		lineHeight: '24px',
 	});
 	const markdownView = {
 		editor: { cm: undefined as never },
@@ -353,6 +347,7 @@ function createPreviewContainer({
 				getComputedStyle: () => ({ fontSize, lineHeight }),
 			},
 		},
+		querySelector: () => null,
 		scrollHeight: 1_000,
 		scrollTop: 100,
 	});

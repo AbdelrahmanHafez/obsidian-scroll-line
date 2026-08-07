@@ -81,7 +81,10 @@ export function getMarkdownScrollContext(
 	view: MarkdownScrollView
 ): MarkdownScrollContext {
 	if (view.getMode() === 'preview') {
-		const scrollEl = view.previewMode.containerEl;
+		const previewContainer = view.previewMode.containerEl;
+		const scrollEl =
+			previewContainer.querySelector<HTMLElement>('.markdown-preview-view') ??
+			previewContainer;
 		return {
 			lineHeight: getPreviewLineHeight(scrollEl),
 			mode: 'preview',
