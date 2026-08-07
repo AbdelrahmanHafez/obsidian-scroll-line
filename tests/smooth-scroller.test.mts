@@ -49,7 +49,30 @@ test('scrollbar interaction cancels an active shortcut animation', () => {
 	}
 });
 
-test('destroy removes manual scroll listeners', () => {
+test('touch interaction cancels an active shortcut animation', () => {
+	// Arrange
+	const { animationFrames, restoreAnimationFrame, scrollDOM, scroller, view } =
+		createTestContext();
+	const manualScrollObserver = createManualScrollObserver(view);
+
+	try {
+		// Act
+		scroller.scrollBy(view, 120);
+		runNextAnimationFrame(animationFrames);
+		scrollDOM.dispatchEvent(new Event('pointerdown'));
+		scrollDOM.scrollTop = 300;
+		runAllAnimationFrames(animationFrames);
+
+		// Assert
+		assert.equal(scrollDOM.scrollTop, 300);
+		assert.equal(animationFrames.size, 0);
+	} finally {
+		manualScrollObserver.destroy();
+		restoreAnimationFrame();
+	}
+});
+
+test('destroy removes wheel listener', () => {
 	// Arrange
 	const { animationFrames, restoreAnimationFrame, scrollDOM, scroller, view } =
 		createTestContext();
@@ -61,6 +84,50 @@ test('destroy removes manual scroll listeners', () => {
 		scroller.scrollBy(view, 120);
 		runNextAnimationFrame(animationFrames);
 		scrollDOM.dispatchEvent(new Event('wheel'));
+		runAllAnimationFrames(animationFrames);
+
+		// Assert
+		assert.equal(scrollDOM.scrollTop, 220);
+		assert.equal(animationFrames.size, 0);
+	} finally {
+		restoreAnimationFrame();
+	}
+});
+
+test('destroy removes mouse listener', () => {
+	// Arrange
+	const { animationFrames, restoreAnimationFrame, scrollDOM, scroller, view } =
+		createTestContext();
+	const manualScrollObserver = createManualScrollObserver(view);
+	manualScrollObserver.destroy();
+
+	try {
+		// Act
+		scroller.scrollBy(view, 120);
+		runNextAnimationFrame(animationFrames);
+		scrollDOM.dispatchEvent(new Event('mousedown'));
+		runAllAnimationFrames(animationFrames);
+
+		// Assert
+		assert.equal(scrollDOM.scrollTop, 220);
+		assert.equal(animationFrames.size, 0);
+	} finally {
+		restoreAnimationFrame();
+	}
+});
+
+test('destroy removes touch listener', () => {
+	// Arrange
+	const { animationFrames, restoreAnimationFrame, scrollDOM, scroller, view } =
+		createTestContext();
+	const manualScrollObserver = createManualScrollObserver(view);
+	manualScrollObserver.destroy();
+
+	try {
+		// Act
+		scroller.scrollBy(view, 120);
+		runNextAnimationFrame(animationFrames);
+		scrollDOM.dispatchEvent(new Event('pointerdown'));
 		runAllAnimationFrames(animationFrames);
 
 		// Assert
