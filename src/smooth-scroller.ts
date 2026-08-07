@@ -25,6 +25,8 @@ interface ScrollCommand {
 // so animations feel snappy at first and settle softly.
 const EASE_PER_FRAME = 0.2;
 const STOP_EPSILON = 0.5;
+const DEFAULT_PREVIEW_LINE_HEIGHT = 24;
+const NORMAL_LINE_HEIGHT_RATIO = 1.5;
 
 export class SmoothScroller {
 	private target = 0;
@@ -143,9 +145,16 @@ function getScrollElement(target: ScrollTarget): HTMLElement {
 
 function getPreviewLineHeight(scrollEl: HTMLElement): number {
 	const styles = scrollEl.ownerDocument.defaultView?.getComputedStyle(scrollEl);
-	const lineHeight = Number.parseFloat(styles?.lineHeight ?? '');
-	if (Number.isFinite(lineHeight) && lineHeight > 0) return lineHeight;
+	const lineHeight = parsePositiveCssLength(styles?.lineHeight);
+	if (lineHeight !== null) return lineHeight;
 
-	const fontSize = Number.parseFloat(styles?.fontSize ?? '');
-	return Number.isFinite(fontSize) && fontSize > 0 ? fontSize * 1.5 : 24;
+	const fontSize = parsePositiveCssLength(styles?.fontSize);
+	return fontSize === null
+		? DEFAULT_PREVIEW_LINE_HEIGHT
+		: fontSize * NORMAL_LINE_HEIGHT_RATIO;
+}
+
+function parsePositiveCssLength(value: string | undefined): number | null {
+	const pixels = Number.parseFloat(value ?? '');
+	return Number.isFinite(pixels) && pixels > 0 ? pixels : null;
 }
